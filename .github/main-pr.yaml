@@ -4,7 +4,7 @@ on:
   pull_request:
     types: [closed]
     branches:
-      - 'test2'
+      - 'main'
     # branches-ignore:
     #   - 'main'
     #   - 'proof-v10-qa1'
