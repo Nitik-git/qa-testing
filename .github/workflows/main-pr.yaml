@@ -110,6 +110,7 @@ jobs:
 
 
       - name: Reset for tag
+        if: env.OPEN_PR == ''
         run: |-
           git config --local user.email ""noreplay@github.com""
           git config --local user.name "githubCI"
