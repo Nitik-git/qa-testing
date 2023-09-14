@@ -103,7 +103,7 @@ jobs:
             git fetch origin $RESET_ENV && git checkout $RESET_ENV
             git tag reset-qa-${{ github.sha }}
             git tag
-            git push origin qa-reset-${{ github.sha }}
+            git push origin reset-qa-${{ github.sha }}
           fi
           echo "this is test 6"
 
