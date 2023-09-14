@@ -50,8 +50,11 @@ jobs:
           for ((i=0; i<3; i++)); do
 
             PR=`gh pr list --head ${{ github.event.pull_request.head.ref }} --base ${QA_ENV[$i]} | head -n 1 | awk '{print $1}'`
-
-            base_branch=${QA_ENV[$i]}
+            if [ -n "$PR" ]; then
+              base_branch=${QA_ENV[$i]}
+              echo "base branch : $base_branch"
+              break
+            fi
           done
           echo "OPEN_PR=$PR" >> "$GITHUB_ENV"
           echo "base_branch=$base_branch" >> "$GITHUB_ENV"
@@ -78,7 +81,10 @@ jobs:
           QA_ENV=( 'proof-v10-qa-1' 'proof-v10-qa-2' 'proof-v10-qa-3' )
           for ((i=0; i<3; i++)); do
             echo $temp1
-            git branch
+            git branch --show-current
+            git fetch origin ${QA_ENV[$i]}
+            git checkout ${QA_ENV[$i]}
+            git branch --show-current
             temp2=`git log ${QA_ENV[$i]} --oneline --decorate | grep $temp1 | awk '{print $1}'`
             echo $temp2
             echo "this is ${QA_ENV[$i]}"
@@ -98,17 +104,78 @@ jobs:
             git tag reset-qa-${{ github.sha }}
             git tag
             git push origin reset-qa-${{ github.sha }}
+            echo "RESET_ENV=$RESET_ENV" >> "$GITHUB_ENV"
           fi
           echo "this is test 6"
+
+
+      - name: Reset for tag
+        run: |-
+          git config --local user.email ""noreplay@github.com""
+          git config --local user.name "githubCI"
+          echo "111111111"
+          commit=$(head -n 1 checkpoint.txt)
+          echo $commit
+          echo "22222222222"
+          git branch
+          git fetch origin ${{ env.RESET_ENV }}
+          git checkout ${{ env.RESET_ENV }}
+          git log -5
+          git reset $commit
+          git log -5 
+          echo "333333333333"
+          git add . && git stash
+          echo "44444444444"
+          git fetch origin main  && git checkout main && git checkout ${{ env.RESET_ENV }}
+          git branch
+          git merge -X theirs origin/main
+          echo "6666666"
+          git branch
+          echo "77777777"
+          git status
+          echo "55555555555"
+          pwd
+
+      - name: Push Changes
+        uses: ad-m/github-push-action@master
+        with:
+          force: true
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ env.RESET_ENV }}
+
+      - name: branch name
+        run: git branch
+    
+      - name: 'Authenticate to GCP'
+        id: 'auth'
+        run: |-
+          echo "Authenticate to GCP"
+
+      - name: Push Docker Image to Artifact Registry and Update values.yaml
+        run: |-
+          echo "Taking time"        
+
+      - name: 'Slack Notification'
+        if: ${{ env.RESET_ENV != '' }} 
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_MESSAGE: 'Reset done ${{ env.RESET_ENV }}'
+          SLACK_TITLE: Post Title
+          SLACK_USERNAME: GitBot          
 
       - name: 'Check and Create PR'
         if: env.RESET_ENV != ''
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |-
-          PR_LIST=`gh pr list | awk -F'OPEN' '{print $1}' | awk '{print $NF}'`
+          PR_LIST=`gh pr list --base "main" | awk -F'OPEN' '{print $1}' | awk '{print $NF}'`
           echo $PR_LIST
-          count=`echo "$PR_LIST" | wc -l`
+          if [ -z "$PR_LIST" ]; then
+            count=0
+          else
+            count=$(echo "$PR_LIST" | wc -l)
+          fi
           for ((i=1; i<=$count; i++)); do
             branch=`echo $PR_LIST | awk -v pos="$i" '{print $pos}'`
             echo $branch
@@ -116,10 +183,11 @@ jobs:
             echo $pr_count
             if [ $pr_count == 0 ]; then
               echo "$branch branch is open for testing"
-              gh pr create --base "${{ env.RESET_ENV }}" --head $branch -t "Auto create QA pr for test" -b "testiiing"
+              gh pr create --base "${{ env.RESET_ENV }}" --head "$branch" -t "Auto create QA pr for test" -b "testiiing"
               break
             fi
-          done 
+          done
+          echo "count=$count" >> "$GITHUB_ENV" 
 
       - name: 'Slack Notification for Direct Merge'
         if: ${{ env.OPEN_PR != '' }}
@@ -131,7 +199,7 @@ jobs:
           SLACK_USERNAME: GitBot
 
       - name: 'Slack Notification for PR Creation'
-        if: ${{ env.RESET_ENV != '' }}
+        if: ${{ env.count != 0 }}
         uses: rtCamp/action-slack-notify@v2
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
