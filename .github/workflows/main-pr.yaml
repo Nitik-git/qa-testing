@@ -137,8 +137,17 @@ jobs:
           echo "55555555555"
           pwd
 
+      - name: Reset for tag
+        if: env.OPEN_PR != ''
+        run: |-
+          git config --local user.email ""noreplay@github.com""
+          git config --local user.name "githubCI"
+          rm -rf ./checkpoint.txt
+          git add .
+          git stash
+          git merge -X theirs
+
       - name: Push Changes
-        if: env.OPEN_PR == ''
         uses: ad-m/github-push-action@master
         with:
           force: true
