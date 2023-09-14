@@ -199,7 +199,7 @@ jobs:
           SLACK_USERNAME: GitBot
 
       - name: 'Slack Notification for PR Creation'
-        if: ${{ env.RESET_ENV != '' }} && ${{ env.count != 0 }}
+        if: ${{ env.count != 0 }}
         uses: rtCamp/action-slack-notify@v2
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
