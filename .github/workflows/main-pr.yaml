@@ -147,7 +147,7 @@ jobs:
           git checkout ${{ env.RESET_ENV }}
           rm -rf ./checkpoint.txt
           git add .
-          git stash
+          git commit -m "Delete checkpoint"
           git merge -X theirs origin/main
 
       - name: Push Changes
