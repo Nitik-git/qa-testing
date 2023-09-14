@@ -138,6 +138,7 @@ jobs:
           pwd
 
       - name: Push Changes
+        if: env.OPEN_PR == ''
         uses: ad-m/github-push-action@master
         with:
           force: true
