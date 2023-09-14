@@ -186,7 +186,8 @@ jobs:
               gh pr create --base "${{ env.RESET_ENV }}" --head "$branch" -t "Auto create QA pr for test" -b "testiiing"
               break
             fi
-          done 
+          done
+          echo "count=$count" >> "$GITHUB_ENV" 
 
       - name: 'Slack Notification for Direct Merge'
         if: ${{ env.OPEN_PR != '' }}
@@ -198,7 +199,7 @@ jobs:
           SLACK_USERNAME: GitBot
 
       - name: 'Slack Notification for PR Creation'
-        if: ${{ env.RESET_ENV != '' }}
+        if: ${{ env.RESET_ENV != '' }} && ${{ env.count != 0 }}
         uses: rtCamp/action-slack-notify@v2
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
