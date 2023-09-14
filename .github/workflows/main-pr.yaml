@@ -181,9 +181,10 @@ jobs:
           for ((i=1; i<=$count; i++)); do
             branch=`echo $PR_LIST | awk -v pos="$i" '{print $pos}'`
             echo $branch
-            pr_count=`gh pr list -S "base:proof-v10" --state merged | grep $branch | wc -l | tr -d ' '`
+            pr_merged_count=`gh pr list -S "base:proof-v10" --state merged | grep $branch | wc -l | tr -d ' '`
+            pr_open_count=`gh pr list -S "base:proof-v10" --state open | grep $branch | wc -l | tr -d ' '`
             echo $pr_count
-            if [ $pr_count == 0 ]; then
+            if [ $pr_merged_count == 0 ] && [ $pr_open_count == 0 ]; then
               echo "$branch branch is open for testing"
               gh pr create --base "${{ env.RESET_ENV }}" --head "$branch" -t "Auto create QA pr for test" -b "testiiing"
               break
