@@ -1,0 +1,109 @@
+name: reset-qa-workflow
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - api/**/**
+      - '!api/k8s/**'
+      - assessment/**/**
+      - '!assessment/k8s/**'
+      - data-processing/**/**
+      - '!data-processing/k8s/**'
+      - framework/**/**
+      - '!framework/k8s/**'
+      - messaging/**/**
+      - '!messaging/k8s/**'
+      - storage/**/**
+      - '!storage/k8s/**'
+      - user-auth-permission/**/**
+      - '!user-auth-permission/k8s/**'
+      - visualization/**/**
+      - '!visualization/k8s/**'
+      - workers/**/**
+      - '!workers/assessment-due/k8s/**'
+      - '!workers/metric-aggregate/k8s/**'
+      - '!workers/metric-calculate/k8s/**' 
+    tags:
+      - qa-reset-*
+
+permissions:
+  actions: write
+  checks: write
+  contents: write
+  deployments: write
+  issues: write
+  packages: write
+  pull-requests: write
+  repository-projects: write
+  security-events: write
+  statuses: write
+  id-token: write
+
+jobs:
+  build-push-gcr:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout on Tag
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
+    - name: Reset for tag
+      run: |-
+        git config --local user.email ""noreplay@github.com""
+        git config --local user.name "githubCI"
+        branch_count=$(echo "${{ github.ref }}" | sed 's/refs\/tags\///' | cut -d '-' -f 3)
+        branch_name=proof-v10-qa-${branch_count}
+        echo ${branch_name}
+        echo "branch_name=$branch_name" >> "$GITHUB_ENV"
+        echo "111111111"
+        commit=$(head -n 1 checkpoint.txt)
+        echo $commit
+        echo "22222222222"
+        git branch
+        git fetch origin ${branch_name}
+        git checkout ${branch_name}
+        git log -5
+        git reset $commit
+        git log -5 
+        echo "333333333333"
+        git add . && git stash
+        echo "44444444444"
+        git fetch origin main  && git checkout main && git checkout ${branch_name}
+        git branch
+        git merge -X theirs origin/main
+        echo "6666666"
+        git branch
+        echo "77777777"
+        git status
+        echo "55555555555"
+        pwd
+
+    - name: Push Changes
+      uses: ad-m/github-push-action@master
+      with:
+        force: true
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        branch: ${{ env.branch_name }}
+
+    - name: branch name
+      run: git branch
+  
+    - name: 'Authenticate to GCP'
+      id: 'auth'
+      run: |-
+        echo "Authenticate to GCP"
+
+    - name: Push Docker Image to Artifact Registry and Update values.yaml
+      run: |-
+        echo "Taking time"        
+
+      - name: 'Slack Notification'
+        if: ${{ env.branch_name != '' }} 
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_MESSAGE: 'Reset done ${{ env.branch_name }}'
+          SLACK_TITLE: Post Title
+          SLACK_USERNAME: GitBot
