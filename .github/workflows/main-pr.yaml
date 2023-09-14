@@ -50,8 +50,11 @@ jobs:
           for ((i=0; i<3; i++)); do
 
             PR=`gh pr list --head ${{ github.event.pull_request.head.ref }} --base ${QA_ENV[$i]} | head -n 1 | awk '{print $1}'`
-
-            base_branch=${QA_ENV[$i]}
+            if [ -n "$PR" ]; then
+              base_branch=${QA_ENV[$i]}
+              echo "base branch : $base_branch"
+              break
+            fi
           done
           echo "OPEN_PR=$PR" >> "$GITHUB_ENV"
           echo "base_branch=$base_branch" >> "$GITHUB_ENV"
@@ -78,7 +81,10 @@ jobs:
           QA_ENV=( 'proof-v10-qa-1' 'proof-v10-qa-2' 'proof-v10-qa-3' )
           for ((i=0; i<3; i++)); do
             echo $temp1
-            git branch
+            git branch --show-current
+            git fetch origin ${QA_ENV[$i]}
+            git checkout ${QA_ENV[$i]}
+            git branch --show-current
             temp2=`git log ${QA_ENV[$i]} --oneline --decorate | grep $temp1 | awk '{print $1}'`
             echo $temp2
             echo "this is ${QA_ENV[$i]}"
@@ -97,7 +103,7 @@ jobs:
             git fetch origin $RESET_ENV && git checkout $RESET_ENV
             git tag reset-qa-${{ github.sha }}
             git tag
-            git push origin reset-qa-${{ github.sha }}
+            git push origin qa-reset-${{ github.sha }}
           fi
           echo "this is test 6"
 
