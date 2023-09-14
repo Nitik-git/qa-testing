@@ -171,7 +171,11 @@ jobs:
         run: |-
           PR_LIST=`gh pr list --base "main" | awk -F'OPEN' '{print $1}' | awk '{print $NF}'`
           echo $PR_LIST
-          count=$(echo "$PR_LIST" | wc -l)
+          if [ -z "$PR_LIST" ]; then
+            count=0
+          else
+            count=$(echo "$PR_LIST" | wc -l)
+          fi
           for ((i=1; i<=$count; i++)); do
             branch=`echo $PR_LIST | awk -v pos="$i" '{print $pos}'`
             echo $branch
