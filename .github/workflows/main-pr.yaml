@@ -142,10 +142,11 @@ jobs:
         run: |-
           git config --local user.email ""noreplay@github.com""
           git config --local user.name "githubCI"
+          git checkout ${{ env.RESET_ENV }}
           rm -rf ./checkpoint.txt
           git add .
           git stash
-          git merge -X theirs
+          git merge -X theirs origin/main
 
       - name: Push Changes
         uses: ad-m/github-push-action@master
@@ -192,7 +193,8 @@ jobs:
             echo $branch
             pr_merged_count=`gh pr list -S "base:proof-v10" --state merged | grep $branch | wc -l | tr -d ' '`
             pr_open_count=`gh pr list -S "base:proof-v10" --state open | grep $branch | wc -l | tr -d ' '`
-            echo $pr_count
+            echo $pr_merged_count
+            echo $pr_open_count            
             if [ $pr_merged_count == 0 ] && [ $pr_open_count == 0 ]; then
               echo "$branch branch is open for testing"
               gh pr create --base "${{ env.RESET_ENV }}" --head "$branch" -t "Auto create QA pr for test" -b "testiiing"
