@@ -68,7 +68,7 @@ jobs:
           echo "RESET_ENV=$base_branch" >> "$GITHUB_ENV"
 
 
-      - name: 'Reset QA Branch'
+      - name: 'Reset QA Branch if there is no open pr'
         if: env.OPEN_PR == ''
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
@@ -109,7 +109,7 @@ jobs:
           echo "this is test 6"
 
 
-      - name: Reset for tag
+      - name: Reset for tag if there is no open pr
         if: env.OPEN_PR == ''
         run: |-
           git config --local user.email ""noreplay@github.com""
@@ -137,8 +137,19 @@ jobs:
           echo "55555555555"
           pwd
 
+      - name: Reset for tag
+        if: env.OPEN_PR != ''
+        run: |-
+          git config --local user.email ""noreplay@github.com""
+          git config --local user.name "githubCI"
+          git fetch origin ${{ env.RESET_ENV }}
+          git checkout ${{ env.RESET_ENV }}
+          rm -rf ./checkpoint.txt
+          git add . && git stash
+          git merge main -X theirs
+          
+
       - name: Push Changes
-        if: env.OPEN_PR == ''
         uses: ad-m/github-push-action@master
         with:
           force: true
