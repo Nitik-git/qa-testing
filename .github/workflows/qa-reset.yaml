@@ -98,3 +98,12 @@ jobs:
     - name: Push Docker Image to Artifact Registry and Update values.yaml
       run: |-
         echo "Taking time"        
+
+      - name: 'Slack Notification'
+        if: ${{ env.branch_name != '' }} 
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_MESSAGE: 'Reset done ${{ env.branch_name }}'
+          SLACK_TITLE: Post Title
+          SLACK_USERNAME: GitBot
