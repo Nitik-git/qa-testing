@@ -169,9 +169,9 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |-
-          PR_LIST=`gh pr list | awk -F'OPEN' '{print $1}' | awk '{print $NF}'`
+          PR_LIST=`gh pr list --base "main" | awk -F'OPEN' '{print $1}' | awk '{print $NF}'`
           echo $PR_LIST
-          count=`echo "$PR_LIST" | wc -l`
+          count=$(echo "$PR_LIST" | wc -l)
           for ((i=1; i<=$count; i++)); do
             branch=`echo $PR_LIST | awk -v pos="$i" '{print $pos}'`
             echo $branch
@@ -179,7 +179,7 @@ jobs:
             echo $pr_count
             if [ $pr_count == 0 ]; then
               echo "$branch branch is open for testing"
-              gh pr create --base "${{ env.RESET_ENV }}" --head $branch -t "Auto create QA pr for test" -b "testiiing"
+              gh pr create --base "${{ env.RESET_ENV }}" --head "$branch" -t "Auto create QA pr for test" -b "testiiing"
               break
             fi
           done 
