@@ -183,6 +183,9 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |-
+          git fetch origin main  && git checkout main
+          git fetch origin ${{ env.RESET_ENV }}
+          git checkout ${{ env.RESET_ENV }}
           PR_LIST=`gh pr list --base "main" | awk -F'OPEN' '{print $1}' | awk '{print $NF}'`
           echo $PR_LIST
           if [ -z "$PR_LIST" ]; then
@@ -199,11 +202,20 @@ jobs:
             echo $pr_open_count            
             if [ $pr_merged_count == 0 ] && [ $pr_open_count == 0 ]; then
               echo "$branch branch is open for testing"
+              git log --oneline main | head -n 1 | awk '{print $1}' >> checkpoint.txt
               gh pr create --base "${{ env.RESET_ENV }}" --head "$branch" -t "Auto create QA pr for test" -b "testiiing"
               break
             fi
           done
           echo "count=$count" >> "$GITHUB_ENV" 
+
+      - name: Push Changes
+        if: env.RESET_ENV != ''
+        uses: ad-m/github-push-action@master
+        with:
+           force: true
+           github_token: ${{ secrets.GITHUB_TOKEN }}
+           branch: ${{ env.test }}
 
       - name: 'Slack Notification for Direct Merge'
         if: ${{ env.OPEN_PR != '' }}
