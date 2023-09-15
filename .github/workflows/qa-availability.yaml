@@ -64,6 +64,7 @@ jobs:
           git config --local user.name "githubCI"
           git fetch origin main && git checkout main
           git fetch origin ${{ env.test }} && git checkout ${{ env.test }}
+          git merge main -X ours
           git log --oneline main | head -n 1 | awk '{print $1}' >> checkpoint.txt
           git add ./checkpoint.txt
           git commit -m "Add commitfile"              
