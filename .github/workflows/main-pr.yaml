@@ -217,7 +217,7 @@ jobs:
         with:
            force: true
            github_token: ${{ secrets.GITHUB_TOKEN }}
-           branch: ${{ env.test }}
+           branch: ${{ env.RESET_ENV }}
 
       - name: 'Slack Notification for Direct Merge'
         if: ${{ env.OPEN_PR != '' }}
