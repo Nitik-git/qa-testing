@@ -204,7 +204,7 @@ jobs:
               echo "$branch branch is open for testing"
               git log --oneline main | head -n 1 | awk '{print $1}' >> checkpoint.txt
               git add .
-              git commit "Add commitfile"
+              git commit -m "Add commitfile"
               gh pr create --base "${{ env.RESET_ENV }}" --head "$branch" -t "Auto create QA pr for test" -b "testiiing"
               break
             fi
