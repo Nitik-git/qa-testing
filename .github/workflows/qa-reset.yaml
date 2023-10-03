@@ -90,18 +90,18 @@ jobs:
     - name: branch name
       run: git branch
   
-    - name: 'Authenticate to GCP'
-      id: 'auth'
-      uses: 'google-github-actions/auth@v1'
-      with:
-        credentials_json: '${{ secrets.QA_SERVICE_ACCOUNT_KEY }}'
+    # - name: 'Authenticate to GCP'
+    #   id: 'auth'
+    #   uses: 'google-github-actions/auth@v1'
+    #   with:
+    #     credentials_json: '${{ secrets.QA_SERVICE_ACCOUNT_KEY }}'
   
-    - name: 'Set up Cloud SDK'
-      uses: 'google-github-actions/setup-gcloud@v1'
+    # - name: 'Set up Cloud SDK'
+    #   uses: 'google-github-actions/setup-gcloud@v1'
   
-    - name: Configure Docker Client
-      run: |-
-        gcloud auth configure-docker us-central1-docker.pkg.dev
+    # - name: Configure Docker Client
+    #   run: |-
+    #     gcloud auth configure-docker us-central1-docker.pkg.dev
 
     - name: Update Config
       run: |-
