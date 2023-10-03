@@ -27,7 +27,7 @@ permissions:
 jobs:
   pr_check:
     if: github.event.pull_request.merged == true
-    runs-on: [self-hosted,qa]
+    runs-on: ubuntu-latest
     # runs-on: ubuntu-latest
     steps:
       - name: Checkout on head ref
