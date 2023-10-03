@@ -201,6 +201,10 @@ jobs:
 
 
             envname=`echo ${{ env.RESET_ENV }} | cut -d '-' -f 3,4`
+            cd ./workers/${SERVICE_PATH[$i]}/k8s/${envname}
+            echo "0000000000000000"
+            pwd
+            ls
             if [ "${SERVICE_PATH[$i]}" == "assessment-due" ] || [ "${SERVICE_PATH[$i]}" == "metric-aggregate" ] || [ "${SERVICE_PATH[$i]}" == "metric-calculate" ]; then
               export TAG=$(cat ./workers/${SERVICE_PATH[$i]}/k8s/${envname}/values.yaml | awk 'p>1; /:/{++p}' | awk -F: '{if(NR==2) {print $3}}')
               sed -i "s/${TAG}/${GITHUB_SHA}/g" ./workers/${SERVICE_PATH[$i]}/k8s/${envname}/values.yaml
