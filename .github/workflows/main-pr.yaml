@@ -188,6 +188,10 @@ jobs:
           git config --local user.email ""noreplay@github.com""
           git config --local user.name "githubCI"
           git pull origin ${{ env.RESET_ENV }}
+          pwd
+          echo "000000000000"
+          ls
+
 
       - name: Push Docker Image to Artifact Registry and Update values.yaml
         run: |-
