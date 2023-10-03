@@ -1,0 +1,39 @@
+name: common-qa-workflow
+
+on:
+  workflow_dispatch:
+  push:
+    branches: 
+      - proof-v10-qa-*
+    paths:
+      - api/**/**
+      - '!api/k8s/**'
+      - assessment/**/**
+      - '!assessment/k8s/**'
+      - workers/**/**
+      - '!workers/assessment-due/k8s/**'
+      - '!workers/metric-aggregate/k8s/**'
+      - '!workers/metric-calculate/k8s/**' 
+    tags:
+      - reset-qa-*
+
+permissions:
+  actions: write
+  checks: write
+  contents: write
+  deployments: write
+  issues: write
+  packages: write
+  pull-requests: write
+  repository-projects: write
+  security-events: write
+  statuses: write
+  id-token: write
+
+jobs:
+  services_list:
+    runs-on: ubuntu-latest
+    steps:
+      - name: qa-prod-common-workflow
+        run:
+          echo "qa-deployment = qa-prod-common-workflow"
