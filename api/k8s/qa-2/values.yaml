@@ -1,0 +1,6 @@
+replicaCount: 1
+serviceName: api
+image:
+  name: us-central1-docker.pkg.dev/nonprod-350513/api-qa/api:77e5b9dde44b4e97b4e8a7387ab2a1279d02bc83
+  pullPolicy: Always
+appCommand: npm run build && make start-service

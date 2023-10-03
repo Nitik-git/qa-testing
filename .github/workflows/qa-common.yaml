@@ -10,12 +10,12 @@ on:
       - '!api/k8s/**'
       - assessment/**/**
       - '!assessment/k8s/**'
-      - data-processing/**/**
-      - '!data-processing/k8s/**'
       - workers/**/**
       - '!workers/assessment-due/k8s/**'
       - '!workers/metric-aggregate/k8s/**'
       - '!workers/metric-calculate/k8s/**' 
+    tags:
+      - reset-qa-*
 
 permissions:
   actions: write
@@ -34,37 +34,6 @@ jobs:
   services_list:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout for Push
-        if: ${{ startsWith(github.ref, 'refs/heads/') }}
-        uses: actions/checkout@v2
-        with:
-           fetch-depth: 0 
-           ref: ${{ github.event.pull_request.head.ref }}
-
-      - name: Checkout for Tag
-        if: ${{ startsWith(github.ref, 'refs/tags/') }}
-        uses: actions/checkout@v2
-        with:
-           fetch-depth: 0
-
-      - name: Create Files Array
-        id: createarray
-        run: |-
-          echo "Create Files Array"
-
-  build-push-gcr:
-    needs: services_list
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout on Tag
-      if: ${{ startsWith(github.ref, 'refs/tags/') }}
-      uses: actions/checkout@v2
-      with:
-        fetch-depth: 0
-        ref: ${{ github.event.pull_request.head.ref }}
-
-    - name: Checkout on Push
-      if: ${{ startsWith(github.ref, 'refs/heads/') }}
-      uses: actions/checkout@v2
-      with:
-        fetch-depth: 0
+      - name: qa-prod-common-workflow
+        run:
+          echo "qa-deployment = qa-prod-common-workflow"

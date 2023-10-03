@@ -4,7 +4,7 @@ on:
   pull_request:
     types: [opened, reopened]
     branches:
-      - 'main'
+      - 'test2'
 
 permissions:
   actions: write
@@ -32,6 +32,18 @@ jobs:
         run: |-
          git branch
          echo print : ${{ github.head_ref }} 
+
+      - name: Install gh utility
+        run: |-
+         type -p curl >/dev/null || (sudo apt update && sudo apt install curl -y)
+         curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
+         && sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
+         && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+         && sudo apt update \
+         && sudo apt install gh -y
+         echo "check1"
+         gh --version
+
    
       - name: Check availability of QA
         id: check-availability
@@ -62,10 +74,10 @@ jobs:
         run: |-
           git config --local user.email ""noreplay@github.com""
           git config --local user.name "githubCI"
-          git fetch origin main && git checkout main
+          git fetch origin test2 && git checkout test2
           git fetch origin ${{ env.test }} && git checkout ${{ env.test }}
-          git merge -X ours origin/main
-          git log --oneline main | head -n 1 | awk '{print $1}' >> checkpoint.txt
+          git merge -X ours origin/test2
+          git log --oneline test2 | head -n 1 | awk '{print $1}' >> checkpoint.txt
           git add ./checkpoint.txt
           git commit -m "Add commitfile"              
 
@@ -89,20 +101,41 @@ jobs:
           git branch
           gh pr create --base "${{ env.test }}" --head ${{ github.event.pull_request.head.ref }} -t "Auto create QA pr for test" -b "testiiing"
 
+      - name: 'Get Branch Links'
+        id: get-link
+        env: 
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}      
+        run: |-
+         echo print : ${{ github.head_ref }}
+         featlink=https://github.com/proofio/catalyst-backend/tree/${{ github.head_ref }}
+         echo "featlink: $featlink"
+         echo "featlink=$featlink" >> "$GITHUB_ENV"
+         pr_number=`gh pr list --base "${{ env.test }}" --head "${{ github.event.pull_request.head.ref }}" | awk '{print $1}'`
+         prlink=https://github.com/proofio/catalyst-backend/pull/${pr_number}
+         echo "pr link : $prlink "
+         echo "prlink=$prlink" >> "$GITHUB_ENV"
+
+         echo "${{ env.test }}"
+
       - name: 'Slack Notification'
         if: ${{ env.test == '' }}
         uses: rtCamp/action-slack-notify@v2
         env:
+          SLACK_COLOR: '#FF0000'
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
-          SLACK_MESSAGE: 'no qa env is present currentlyPost Content :rocket:'
+          SLACK_MESSAGE: 'No QA environment available for now, PR with ${{ env.featlink }} to available QA environment will be auto created when any qa environment becomes available'
           SLACK_TITLE: Post Title
-          SLACK_USERNAME: GitBot
+          SLACK_USERNAME: Proof-QA-Alert
+          SLACK_FOOTER: 'Proof'
+          SLACK_ICON: https://avatars.githubusercontent.com/u/125573010?s=48&v=4
 
       - name: 'Slack Notification'
         if: ${{ env.test != '' }} 
         uses: rtCamp/action-slack-notify@v2
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
-          SLACK_MESSAGE: 'PR IS CREATED with ${{ env.test }}'
+          SLACK_MESSAGE: 'You can merge this PR ${{ env.prlink }} , it will deploy this ${{ env.featlink }} to ${{ env.test }}'
           SLACK_TITLE: Post Title
-          SLACK_USERNAME: GitBot
+          SLACK_USERNAME: Proof-QA-Alert
+          SLACK_FOOTER: 'Proof'
+          SLACK_ICON: https://avatars.githubusercontent.com/u/125573010?s=48&v=4
