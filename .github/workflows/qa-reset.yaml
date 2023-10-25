@@ -70,9 +70,9 @@ jobs:
         echo "333333333333"
         git add . && git stash
         echo "44444444444"
-        git fetch origin main  && git checkout main && git checkout ${branch_name}
+        git fetch origin test2  && git checkout test2 && git checkout ${branch_name}
         git branch
-        git merge -X theirs origin/main
+        git merge -X theirs origin/test2
         echo "6666666"
         git branch
         echo "77777777"
@@ -92,18 +92,59 @@ jobs:
   
     - name: 'Authenticate to GCP'
       id: 'auth'
+      uses: 'google-github-actions/auth@v1'
+      with:
+        credentials_json: '${{ secrets.QA_SERVICE_ACCOUNT_KEY }}'
+  
+    - name: 'Set up Cloud SDK'
+      uses: 'google-github-actions/setup-gcloud@v1'
+  
+    - name: Configure Docker Client
       run: |-
-        echo "Authenticate to GCP"
+        gcloud auth configure-docker us-central1-docker.pkg.dev
+
+    - name: Update Config
+      run: |-
+        git config --local user.email ""noreplay@github.com""
+        git config --local user.name "githubCI"
+        git pull origin ${{ env.branch_name }}
 
     - name: Push Docker Image to Artifact Registry and Update values.yaml
       run: |-
-        echo "Taking time"        
+          SERVICE_PATH=( 'assessment-due' 'metric-aggregate' 'metric-calculate' 'api' 'assessment' )
+          for ((i=0; i<11; i++)); do
+            echo ${SERVICE_PATH[$i]}
+
+
+            envname=`echo ${{ env.RESET_ENV }} | cut -d '-' -f 3,4`
+            if [ "${SERVICE_PATH[$i]}" == "assessment-due" ] || [ "${SERVICE_PATH[$i]}" == "metric-aggregate" ] || [ "${SERVICE_PATH[$i]}" == "metric-calculate" ]; then
+              export TAG=$(cat ./workers/${SERVICE_PATH[$i]}/k8s/${envname}/values.yaml | awk 'p>1; /:/{++p}' | awk -F: '{if(NR==2) {print $3}}')
+              sed -i "s/${TAG}/${GITHUB_SHA}/g" ./workers/${SERVICE_PATH[$i]}/k8s/${envname}/values.yaml
+              git add ./workers/${SERVICE_PATH[$i]}/k8s/${envname}/values.yaml
+            else
+              export TAG=$(cat ./${SERVICE_PATH[$i]}/k8s/${envname}/values.yaml | awk 'p>1; /:/{++p}' | awk -F: '{if(NR==2) {print $3}}')
+              sed -i "s/${TAG}/${GITHUB_SHA}/g" ./${SERVICE_PATH[$i]}/k8s/${envname}/values.yaml
+              git add ./${SERVICE_PATH[$i]}/k8s/${envname}/values.yaml
+            fi
+            git branch --show-current
+            git commit -m "Add changes"
+          done
+          echo "Complete pull push"
+  
+    - name: Push Changes
+      uses: ad-m/github-push-action@master
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        branch: ${{ env.branch_name }}        
 
     - name: 'Slack Notification'
       if: ${{ env.branch_name != '' }} 
       uses: rtCamp/action-slack-notify@v2
       env:
+        SLACK_COLOR: '#0062ff'
         SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
         SLACK_MESSAGE: 'Reset done ${{ env.branch_name }}'
         SLACK_TITLE: Post Title
-        SLACK_USERNAME: GitBot
+        SLACK_USERNAME: Proof-QA-Alert
+        SLACK_FOOTER: 'Proof'
+        SLACK_ICON: https://avatars.githubusercontent.com/u/125573010?s=48&v=4
