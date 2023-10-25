@@ -1,0 +1,280 @@
+name: main-pr-workflow
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - 'test2'
+    # branches-ignore:
+    #   - 'test2'
+    #   - 'proof-v10-qa1'
+    #   - 'proof-v10-qa2'
+    #   - 'proof-v10-qa3'
+
+permissions:
+  actions: write
+  checks: write
+  contents: write
+  deployments: write
+  issues: write
+  packages: write
+  pull-requests: write
+  repository-projects: write
+  security-events: write
+  statuses: write
+  id-token: write
+
+jobs:
+  pr_check:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    # runs-on: [self-hosted,qa]
+    steps:
+      - name: Checkout on head ref
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: display branch
+        run: |-
+         git branch
+         echo ${{ github.event.pull_request.base.ref }}
+         echo ${{ github.event.pull_request.head.ref }}
+      
+      - name: 'Check Open PR'
+        id: check-availability
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |-
+          QA_ENV=( 'proof-v10-qa-1' 'proof-v10-qa-2' 'proof-v10-qa-3' )
+          for ((i=0; i<3; i++)); do
+
+            PR=`gh pr list --head ${{ github.event.pull_request.head.ref }} --base ${QA_ENV[$i]} | head -n 1 | awk '{print $1}'`
+            if [ -n "$PR" ]; then
+              base_branch=${QA_ENV[$i]}
+              echo "base branch : $base_branch"
+              break
+            fi
+          done
+          echo "OPEN_PR=$PR" >> "$GITHUB_ENV"
+          echo "base_branch=$base_branch" >> "$GITHUB_ENV"
+
+      - name: 'Delete Open PR'
+        if: env.OPEN_PR != ''
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |-
+          gh pr close ${{ env.OPEN_PR }}
+          echo "RESET_ENV=$base_branch" >> "$GITHUB_ENV"
+
+
+      - name: 'Reset QA Branch'
+        if: env.OPEN_PR == ''
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |-
+          git fetch origin ${{ github.event.pull_request.head.ref }}
+          git checkout ${{ github.event.pull_request.head.ref }}
+          temp1=`git log --oneline --decorate | head -n 1 | awk '{print $1}'`
+          echo $temp1
+
+          QA_ENV=( 'proof-v10-qa-1' 'proof-v10-qa-2' 'proof-v10-qa-3' )
+          for ((i=0; i<3; i++)); do
+            echo $temp1
+            git branch --show-current
+            git fetch origin ${QA_ENV[$i]}
+            git checkout ${QA_ENV[$i]}
+            git branch --show-current
+            temp2=`git log ${QA_ENV[$i]} --oneline --decorate | grep $temp1 | awk '{print $1}'`
+            echo $temp2
+            echo "this is ${QA_ENV[$i]}"
+            if [ -n "$temp2" ]; then
+              RESET_ENV=${QA_ENV[$i]}
+              echo "this is test 2"
+              break
+            fi
+            echo "this is test 3"
+          done
+  
+          echo $RESET_ENV
+          echo "this is test 5"
+
+          if [ -n "$RESET_ENV" ]; then 
+            git fetch origin $RESET_ENV && git checkout $RESET_ENV
+            git tag reset-qa-${{ github.sha }}
+            git tag
+            git push origin reset-qa-${{ github.sha }}
+            echo "RESET_ENV=$RESET_ENV" >> "$GITHUB_ENV"
+          fi
+          echo "this is test 6"
+
+
+      - name: Reset for tag
+        if: env.OPEN_PR == ''
+        run: |-
+          git config --local user.email ""noreplay@github.com""
+          git config --local user.name "githubCI"
+          echo "111111111"
+          commit=$(head -n 1 checkpoint.txt)
+          echo $commit
+          echo "22222222222"
+          git branch
+          git fetch origin ${{ env.RESET_ENV }}
+          git checkout ${{ env.RESET_ENV }}
+          git log -5
+          git reset $commit
+          git log -5 
+          echo "333333333333"
+          git add . && git stash
+          echo "44444444444"
+          git fetch origin test2  && git checkout test2 && git checkout ${{ env.RESET_ENV }}
+          git branch
+          git merge -X theirs origin/test2
+          echo "6666666"
+          git branch
+          echo "77777777"
+          git status
+          echo "55555555555"
+          pwd
+
+      - name: Reset for tag
+        if: env.OPEN_PR != ''
+        run: |-
+          git config --local user.email ""noreplay@github.com""
+          git config --local user.name "githubCI"
+          git fetch origin test2  && git checkout test2
+          git fetch origin ${{ env.RESET_ENV }}
+          git checkout ${{ env.RESET_ENV }}
+          rm -rf ./checkpoint.txt
+          git add .
+          git commit -m "Delete checkpoint"
+          git merge -X theirs origin/test2
+
+      - name: Push Changes
+        uses: ad-m/github-push-action@master
+        with:
+          force: true
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ env.RESET_ENV }}
+
+      - name: branch name
+        run: git branch
+    
+      - name: 'Authenticate to GCP'
+        id: 'auth'
+        uses: 'google-github-actions/auth@v1'
+        with:
+          credentials_json: '${{ secrets.QA_SERVICE_ACCOUNT_KEY }}'
+    
+      - name: 'Set up Cloud SDK'
+        uses: 'google-github-actions/setup-gcloud@v1'
+    
+      - name: Configure Docker Client
+        run: |-
+          gcloud auth configure-docker us-central1-docker.pkg.dev
+
+      - name: Update Config
+        run: |-
+          git config --local user.email ""noreplay@github.com""
+          git config --local user.name "githubCI"
+          git pull origin ${{ env.branch_name }}
+
+      - name: Push Docker Image to Artifact Registry and Update values.yaml
+        run: |-
+          SERVICE_PATH=( 'assessment-due' 'metric-aggregate' 'metric-calculate' 'api' 'messaging' 'user-auth-permission' 'assessment' 'framework' 'storage' 'data-processing' 'visualization' )
+          for ((i=0; i<11; i++)); do
+            echo ${SERVICE_PATH[$i]}
+            docker pull us-central1-docker.pkg.dev/nonprod-350513/${SERVICE_PATH[$i]}/${SERVICE_PATH[$i]}:latest
+            docker tag us-central1-docker.pkg.dev/nonprod-350513/${SERVICE_PATH[$i]}/${SERVICE_PATH[$i]}:latest us-central1-docker.pkg.dev/nonprod-350513/${SERVICE_PATH[$i]}-qa/${SERVICE_PATH[$i]}:${{ github.sha }}
+            docker tag us-central1-docker.pkg.dev/nonprod-350513/${SERVICE_PATH[$i]}/${SERVICE_PATH[$i]}:latest us-central1-docker.pkg.dev/nonprod-350513/${SERVICE_PATH[$i]}-qa/${SERVICE_PATH[$i]}:latest
+            docker push --all-tags us-central1-docker.pkg.dev/nonprod-350513/${SERVICE_PATH[$i]}-qa/${SERVICE_PATH[$i]}
+
+
+            env=`echo ${{ env.branch_name }} | cut -d '-' -f 3,4`
+            if [ "${SERVICE_PATH[$i]}" == "assessment-due" ] || [ "${SERVICE_PATH[$i]}" == "metric-aggregate" ] || [ "${SERVICE_PATH[$i]}" == "metric-calculate" ]; then
+              export TAG=$(cat ./workers/${SERVICE_PATH[$i]}/k8s/$env/values.yaml | awk 'p>1; /:/{++p}' | awk -F: '{if(NR==2) {print $3}}')
+              sed -i "s/${TAG}/${GITHUB_SHA}/g" ./workers/${SERVICE_PATH[$i]}/k8s/$env/values.yaml
+              git add ./workers/${SERVICE_PATH[$i]}/k8s/$env/values.yaml
+            else
+              export TAG=$(cat ./${SERVICE_PATH[$i]}/k8s/$env/values.yaml | awk 'p>1; /:/{++p}' | awk -F: '{if(NR==2) {print $3}}')
+              sed -i "s/${TAG}/${GITHUB_SHA}/g" ./${SERVICE_PATH[$i]}/k8s/$env/values.yaml
+              git add ./${SERVICE_PATH[$i]}/k8s/$env/values.yaml
+            fi
+            git branch --show-current
+            git commit -m "Add changes"
+          done
+          echo "Complete pull push"
+    
+      - name: Push Changes
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ env.branch_name }}     
+
+      - name: 'Slack Notification'
+        if: ${{ env.RESET_ENV != '' }} 
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_MESSAGE: 'Reset done ${{ env.RESET_ENV }}'
+          SLACK_TITLE: Post Title
+          SLACK_USERNAME: GitBot          
+
+      - name: 'Check and Create PR'
+        if: env.RESET_ENV != ''
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |-
+          git fetch origin test2  && git checkout test2
+          git fetch origin ${{ env.RESET_ENV }}
+          git checkout ${{ env.RESET_ENV }}
+          PR_LIST=`gh pr list --base "test2" | awk -F'OPEN' '{print $1}' | awk '{print $NF}'`
+          echo $PR_LIST
+          if [ -z "$PR_LIST" ]; then
+            count=0
+          else
+            count=$(echo "$PR_LIST" | wc -l)
+          fi
+          for ((i=1; i<=$count; i++)); do
+            branch=`echo $PR_LIST | awk -v pos="$i" '{print $pos}'`
+            echo $branch
+            pr_merged_count=`gh pr list -S "base:proof-v10" --state merged | grep $branch | wc -l | tr -d ' '`
+            pr_open_count=`gh pr list -S "base:proof-v10" --state open | grep $branch | wc -l | tr -d ' '`
+            echo $pr_merged_count
+            echo $pr_open_count            
+            if [ $pr_merged_count == 0 ] && [ $pr_open_count == 0 ]; then
+              echo "$branch branch is open for testing"
+              git log --oneline test2 | head -n 1 | awk '{print $1}' >> checkpoint.txt
+              git add .
+              git commit -m "Add commitfile"
+              gh pr create --base "${{ env.RESET_ENV }}" --head "$branch" -t "Auto create QA pr for test" -b "testiiing"
+              break
+            fi
+          done
+          echo "count=$count" >> "$GITHUB_ENV" 
+
+      - name: Push Changes
+        if: env.RESET_ENV != ''
+        uses: ad-m/github-push-action@master
+        with:
+           force: true
+           github_token: ${{ secrets.GITHUB_TOKEN }}
+           branch: ${{ env.RESET_ENV }}
+
+      - name: 'Slack Notification for Direct Merge'
+        if: ${{ env.OPEN_PR != '' }}
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_MESSAGE: 'Feature directly merged in test2'
+          SLACK_TITLE: Post Title
+          SLACK_USERNAME: GitBot
+
+      - name: 'Slack Notification for PR Creation'
+        if: ${{ env.count != 0 }}
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_MESSAGE: 'PR is created with ${{ env.RESET_ENV }}'
+          SLACK_TITLE: Post Title
+          SLACK_USERNAME: GitBot
