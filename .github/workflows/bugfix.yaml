@@ -30,6 +30,7 @@ permissions:
   security-events: write
   statuses: write
   id-token: write
+  pull-requests: read
 
 
 jobs:
