@@ -50,6 +50,8 @@ jobs:
             src:
               - 'api/**'
               - 'assessment/**'
+              - 'data-processing/**'
+              - 'framework/**'
               - 'worker/**'
           list-files: 'csv'
 
