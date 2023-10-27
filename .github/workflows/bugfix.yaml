@@ -44,11 +44,10 @@ jobs:
       id: filter
       with:
         filters: |
-          api: api
-          assessment: assessment
-          data-processing: data-processing
-          assessment-due: worker/assessment-due
-
+          api
+          assessment
+          data-processing
+          assessment-due
   build:
     needs: changes
     strategy:
