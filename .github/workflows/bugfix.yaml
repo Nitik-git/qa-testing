@@ -13,10 +13,10 @@ on:
       - '!data-processing/k8s/**'
       - framework/**/**
       - '!framework/k8s/**'      
-      - workers/**/**
-      - '!workers/assessment-due/k8s/**'
-      - '!workers/metric-aggregate/k8s/**'
-      - '!workers/metric-calculate/k8s/**' 
+      - worker/**/**
+      - '!worker/assessment-due/k8s/**'
+      - '!worker/metric-aggregate/k8s/**'
+      - '!worker/metric-calculate/k8s/**' 
   workflow_call:
     outputs:
       matrix:
