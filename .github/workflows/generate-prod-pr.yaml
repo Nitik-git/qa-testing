@@ -1,0 +1,20 @@
+name: generate-prod-pull-request
+
+on:
+  pull_request:
+    types:
+      - closed
+    branches:
+      - 'staging'
+
+jobs:
+  generate_pr:
+    if: github.event.pull_request.merged == true  
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Create PR'
+        env: 
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}      
+        run: |-
+          gh pr list
+          gh pr create --base "main" --head "staging" -t "Auto create QA pr for test" -b "testiiing"
