@@ -43,6 +43,16 @@ jobs:
         with:
            fetch-depth: 10
 
+      - uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          filters: |
+            src:
+              - 'api/**'
+              - 'assessment/**'
+              - 'worker/**'
+          list-files: 'csv'
+
       - name: Check Triggered Path
         run: echo "Triggered by ${{ github.event.inputs.paths }}"
                      
