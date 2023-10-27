@@ -11,6 +11,8 @@ on:
       - '!assessment/k8s/**'
       - data-processing/**/**
       - '!data-processing/k8s/**'
+      - framework/**/**
+      - '!framework/k8s/**'      
       - workers/**/**
       - '!workers/assessment-due/k8s/**'
       - '!workers/metric-aggregate/k8s/**'
