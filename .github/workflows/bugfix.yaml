@@ -1,0 +1,52 @@
+name: staging-deployment
+
+on:
+  push:
+    branches:
+      - fix/commit-issue
+    paths:
+      - api/**/**
+      - '!api/k8s/**'
+      - assessment/**/**
+      - '!assessment/k8s/**'
+      - data-processing/**/**
+      - '!data-processing/k8s/**'
+      - workers/**/**
+      - '!workers/assessment-due/k8s/**'
+      - '!workers/metric-aggregate/k8s/**'
+      - '!workers/metric-calculate/k8s/**' 
+  workflow_call:
+    outputs:
+      matrix:
+        value: ${{ jobs.List_Services.outputs.matrix }}
+
+permissions:
+  actions: write
+  checks: write
+  contents: write
+  deployments: write
+  issues: write
+  packages: write
+  pull-requests: write
+  repository-projects: write
+  security-events: write
+  statuses: write
+  id-token: write
+
+
+jobs:
+  List_Services:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+           fetch-depth: 10
+
+      - name: Check Triggered Path
+        run: echo "Triggered by ${{ github.event.inputs.paths }}"
+                     
+      - name: create files array
+        id: createarray
+        run: |-
+              echo "hello world"
