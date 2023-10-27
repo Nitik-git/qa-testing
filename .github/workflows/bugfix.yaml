@@ -17,10 +17,6 @@ on:
       - '!worker/assessment-due/k8s/**'
       - '!worker/metric-aggregate/k8s/**'
       - '!worker/metric-calculate/k8s/**' 
-  workflow_call:
-    outputs:
-      matrix:
-        value: ${{ jobs.List_Services.outputs.matrix }}
 
 permissions:
   actions: write
@@ -37,7 +33,25 @@ permissions:
 
 
 jobs:
-  List_Services:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      packages: ${{ steps.filter.outputs.changes }}
+    steps:
+    - uses: dorny/paths-filter@v2
+      id: filter
+      with:
+        filters: |
+          api: api
+          assessment: assessment
+          data-processing: data-processing
+          assessment-due: worker/assessment-due
+
+  build:
+    needs: changes
+    strategy:
+      matrix:
+        package: ${{ fromJSON(needs.changes.outputs.packages) }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -45,22 +59,8 @@ jobs:
         with:
            fetch-depth: 10
 
-      - uses: dorny/paths-filter@v2
-        id: changes
-        with:
-          filters: |
-            src:
-              - 'api/**'
-              - 'assessment/**'
-              - 'data-processing/**'
-              - 'framework/**'
-              - 'worker/**'
-          list-files: 'csv'
-
-      - name: Check Triggered Path
-        run: echo "Triggered by ${{ github.event.inputs.paths }}"
-                     
       - name: create files array
         id: createarray
         run: |-
-              echo "hello world"
+              echo "this is : ${{ matrix.packages }} "
+      
