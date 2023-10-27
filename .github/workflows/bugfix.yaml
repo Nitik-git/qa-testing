@@ -65,5 +65,5 @@ jobs:
       - name: create files array
         id: createarray
         run: |-
-              echo "this is : ${{ matrix.packages }} "
+              echo "this is : ${{ matrix.package }} "
       
