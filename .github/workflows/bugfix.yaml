@@ -45,10 +45,14 @@ jobs:
       with:
         base: ${{ github.ref }}
         filters: |
-          api: api
-          assessment: assessment
-          data-processing: data-processing
-          assessment-due: worker/assessment-due
+          api: 
+            - 'api/**/**'
+          assessment: 
+            - 'assessment/**/**'  
+          data-processing: 
+            - 'data-processing/**/**'  
+          assessment-due: 
+            - 'worker/assessment-due/**/**'    
         list-files: 'csv'
 
   build:
