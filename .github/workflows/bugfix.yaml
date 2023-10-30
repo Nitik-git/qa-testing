@@ -51,7 +51,7 @@ jobs:
             - 'assessment/**/**'  
           data-processing: 
             - 'data-processing/**/**'  
-          assessment-due: 
+          worker/assessment-due: 
             - 'worker/assessment-due/**/**'    
         list-files: 'csv'
 
