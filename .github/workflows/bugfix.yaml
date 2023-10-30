@@ -53,6 +53,8 @@ jobs:
             - 'data-processing/**/**'  
           worker/assessment-due: 
             - 'worker/assessment-due/**/**'    
+          worker/metric-aggregate: 
+            - 'worker/metric-aggregate/**/**' 
         list-files: 'csv'
 
   build:
