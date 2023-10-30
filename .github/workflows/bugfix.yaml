@@ -3,7 +3,7 @@ name: staging-deployment
 on:
   push:
     branches:
-      - fix/commit-issue
+      - test/fix-commit-issue1
     paths:
       - api/**/**
       - '!api/k8s/**'
