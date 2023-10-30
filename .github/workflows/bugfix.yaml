@@ -71,4 +71,11 @@ jobs:
         id: createarray
         run: |-
               echo "this is : ${{ matrix.package }} "
+      - name: Extract tag location
+        run: |-
+          export SVC_VARIABLE=`echo ${{ matrix.package }}`
+          SVCS=$(basename $SVC_VARIABLE)
+          echo "222222222"
+          echo $SVCS
+          echo "backendsvcs=$SVCS" >> "$GITHUB_ENV"
       
